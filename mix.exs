@@ -1,9 +1,9 @@
-defmodule Mxr.MixProject do
+defmodule Max.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :mxr,
+      app: :max,
       version: "0.1.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,

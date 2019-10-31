@@ -1,21 +1,21 @@
-# Mxr
+# Max
 
 **TODO: Add description**
 
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `mxr` to your list of dependencies in `mix.exs`:
+by adding `max` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:mxr, "~> 0.1.0"}
+    {:max, "~> 0.1.0"}
   ]
 end
 ```
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/mxr](https://hexdocs.pm/mxr).
+be found at [https://hexdocs.pm/max](https://hexdocs.pm/max).
 

@@ -442,4 +442,31 @@ defmodule Max do
       end
     )
   end
+
+  @spec drop_column(t, non_neg_integer) :: t
+  def drop_column(%Max{array: from_array, rows: rows, columns: columns} = matrix, column_index)
+      when columns > 1 and column_index >= 0 and column_index < columns do
+    to_array = :array.new(rows * (columns - 1), fixed: true, default: default(matrix))
+
+    to_array = do_drop_column(from_array, to_array, 0, 0, count(matrix), column_index, columns)
+
+    %Max{array: to_array, rows: rows, columns: columns - 1}
+  end
+
+  def do_drop_column(_, to_array, from_index, _, size, _, _) when from_index == size do
+    to_array
+  end
+
+  def do_drop_column(from_array, to_array, from_index, to_index, size, column_index, columns) do
+    case rem(from_index, columns) do
+      ^column_index ->
+        do_drop_column(from_array, to_array, from_index + 1, to_index, size, column_index, columns)
+      _else ->
+        value = :array.get(from_index, from_array)
+
+        to_array = :array.set(to_index, value, to_array)
+
+        do_drop_column(from_array, to_array, from_index + 1, to_index + 1, size, column_index, columns)
+    end
+  end
 end

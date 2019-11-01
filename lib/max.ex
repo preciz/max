@@ -552,6 +552,13 @@ defmodule Max do
     (count(matrix) - n) * default(matrix) + acc_val
   end
 
+  @spec trace(t) :: number
+  def trace(%Max{} = matrix) do
+    matrix
+    |> diagonal()
+    |> sum()
+  end
+
   defimpl Enumerable do
     @moduledoc false
 

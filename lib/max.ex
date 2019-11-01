@@ -443,6 +443,33 @@ defmodule Max do
     )
   end
 
+  @spec drop_row(t, non_neg_integer) :: t
+  def drop_row(%Max{array: from_array, rows: rows, columns: columns} = matrix, row_index)
+      when rows > 1 and row_index >= 0 and row_index < rows do
+    to_array = :array.new((rows - 1) * columns, fixed: true, default: default(matrix))
+
+    to_array = do_drop_row(from_array, to_array, 0, 0, count(matrix), row_index * columns, (row_index + 1) * columns)
+
+    %Max{array: to_array, rows: rows - 1, columns: columns}
+  end
+
+  def do_drop_row(_, to_array, from_index, _, size, _, _) when from_index == size do
+    to_array
+  end
+
+  def do_drop_row(from_array, to_array, from_index, to_index, size, skip_from, skip_to) do
+    case from_index >= skip_from && from_index < skip_to do
+      true ->
+        do_drop_row(from_array, to_array, from_index + 1, to_index, size, skip_from, skip_to)
+      false ->
+        value = :array.get(from_index, from_array)
+
+        to_array = :array.set(to_index, value, to_array)
+
+        do_drop_row(from_array, to_array, from_index + 1, to_index + 1, size, skip_from, skip_to)
+    end
+  end
+
   @spec drop_column(t, non_neg_integer) :: t
   def drop_column(%Max{array: from_array, rows: rows, columns: columns} = matrix, column_index)
       when columns > 1 and column_index >= 0 and column_index < columns do

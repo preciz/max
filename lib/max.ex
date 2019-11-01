@@ -405,10 +405,41 @@ defmodule Max do
       case concat_type do
         :rows ->
           set_row(matrix, target_index, head |> row(source_index))
+
         :columns ->
           set_column(matrix, target_index, head |> column(source_index))
       end
 
     do_concat(list, matrix, target_index + 1, source_index + 1, concat_type)
+  end
+
+  @spec diagonal(t) :: t
+  def diagonal(%Max{columns: columns} = matrix) do
+    array = :array.new(columns, fixed: true, default: default(matrix))
+
+    0..(columns - 1)
+    |> Enum.reduce(
+      %Max{array: array, rows: 1, columns: columns},
+      fn col, acc ->
+        set(acc, {0, col}, get(matrix, {col, col}))
+      end
+    )
+  end
+
+  @spec identity(list) :: t
+  def identity(size, options \\ []) do
+    default = Keyword.get(options, :default, :undefined)
+
+    array = :array.new(size * size, fixed: true, default: default)
+
+    0..(size - 1)
+    |> Enum.reduce(
+      %Max{array: array, rows: size, columns: size},
+      fn index, acc ->
+        position = {index, index}
+
+        set(acc, position, 1)
+      end
+    )
   end
 end

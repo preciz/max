@@ -518,6 +518,26 @@ defmodule Max do
     end
   end
 
+  @spec transpose(t) :: t
+  def transpose(%Max{rows: rows, columns: columns} = matrix) do
+    t_matrix =
+      %Max{
+        array: :array.new(rows * columns, fixed: true, default: default(matrix)),
+        rows: columns,
+        columns: rows
+      }
+
+    sparse_foldl(
+      matrix,
+      fn index, value, t_matrix ->
+        {row, col} = index_to_position(matrix, index)
+
+        t_matrix |> set({col, row}, value)
+      end,
+      t_matrix
+    )
+  end
+
   defimpl Enumerable do
     @moduledoc false
 

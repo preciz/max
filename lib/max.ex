@@ -538,6 +538,20 @@ defmodule Max do
     )
   end
 
+  @spec sum(t) :: number
+  def sum(%Max{} = matrix) do
+    {n, acc_val} =
+      sparse_foldl(
+        matrix,
+        fn _, val, {n, acc_val} ->
+          {n + 1, acc_val + val}
+        end,
+        {0, 0}
+      )
+
+    (count(matrix) - n) * default(matrix) + acc_val
+  end
+
   defimpl Enumerable do
     @moduledoc false
 

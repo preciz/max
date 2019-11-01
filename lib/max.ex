@@ -131,17 +131,49 @@ defmodule Max do
   end
 
   @spec get(t, position) :: any
-  def get(%Max{array: array} = max, position) do
-    index = position_to_index(max, position)
+  def get(%Max{array: array} = matrix, position) do
+    index = position_to_index(matrix, position)
 
     :array.get(index, array)
   end
 
   @spec set(t, position, any) :: t
-  def set(%Max{array: array} = max, position, value) do
-    index = position_to_index(max, position)
+  def set(%Max{array: array} = matrix, position, value) do
+    index = position_to_index(matrix, position)
 
-    %Max{max | array: :array.set(index, value, array)}
+    %Max{matrix | array: :array.set(index, value, array)}
+  end
+
+  @spec set_row(t, non_neg_integer, t) :: t
+  def set_row(
+        %Max{columns: columns} = matrix,
+        row_index,
+        %Max{columns: columns, rows: 1} = row_matrix
+      ) do
+    0..(columns - 1)
+    |> Enum.reduce(matrix, fn col, acc ->
+      set(
+        acc,
+        {row_index, col},
+        get(row_matrix, {0, col})
+      )
+    end)
+  end
+
+  @spec set_column(t, non_neg_integer, t) :: t
+  def set_column(
+        %Max{rows: rows} = matrix,
+        column_index,
+        %Max{rows: rows, columns: 1} = column_matrix
+      ) do
+    0..(rows - 1)
+    |> Enum.reduce(matrix, fn row, acc ->
+      set(
+        acc,
+        {row, column_index},
+        get(column_matrix, {row, 0})
+      )
+    end)
   end
 
   @spec to_list(t) :: list
@@ -150,31 +182,112 @@ defmodule Max do
   end
 
   @spec min(t) :: any
-  def min(%Max{} = max) do
-    sparse_foldl(
-      max,
-      fn _, value, acc -> min(value, acc) end,
-      default(max)
-    )
+  def min(%Max{} = matrix) do
+    {_index, value} = do_argmin(matrix)
+
+    value
   end
 
   @spec max(t) :: any
-  def max(%Max{} = max) do
+  def max(%Max{} = matrix) do
+    {_index, value} = do_argmax(matrix)
+
+    value
+  end
+
+  @doc """
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 8)
+      iex> matrix |> Max.argmin()
+      {0, 0}
+      iex> matrix = matrix |> Max.set({1, 1}, 7)
+      iex> matrix |> Max.argmin()
+      {1, 1}
+
+  """
+  @spec argmin(t) :: any
+  def argmin(%Max{} = matrix) do
+    {index, _value} = do_argmin(matrix)
+
+    index_to_position(matrix, index)
+  end
+
+  @doc """
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 8)
+      iex> matrix |> Max.argmax()
+      {0, 0}
+      iex> matrix = matrix |> Max.set({1, 1}, 10)
+      iex> matrix |> Max.argmax()
+      {1, 1}
+
+  """
+  @spec argmax(t) :: any
+  def argmax(%Max{} = matrix) do
+    {index, _value} = do_argmax(matrix)
+
+    index_to_position(matrix, index)
+  end
+
+  @doc false
+  def do_argmin(%Max{} = matrix) do
     sparse_foldl(
-      max,
-      fn _, value, acc -> max(value, acc) end,
-      default(max)
+      matrix,
+      fn index, value, {_acc_index, acc_val} = acc ->
+        case min(value, acc_val) do
+          ^acc_val ->
+            acc
+
+          _else ->
+            {index, value}
+        end
+      end,
+      {0, default(matrix)}
+    )
+  end
+
+  @doc false
+  def do_argmax(%Max{} = matrix) do
+    sparse_foldl(
+      matrix,
+      fn index, value, {_acc_index, acc_val} = acc ->
+        case max(value, acc_val) do
+          ^acc_val ->
+            acc
+
+          _else ->
+            {index, value}
+        end
+      end,
+      {0, default(matrix)}
     )
   end
 
   @spec reshape(t, pos_integer, pos_integer) :: t
-  def reshape(%Max{} = max, rows, columns) do
-    %Max{max | rows: rows, columns: columns}
+  def reshape(%Max{} = matrix, rows, columns) do
+    %Max{matrix | rows: rows, columns: columns}
   end
 
   @spec map(t, fun) :: t
-  def map(%Max{array: array} = max, fun) when is_function(fun, 2) do
-    %Max{max | array: :array.map(fun, array)}
+  def map(%Max{array: array} = matrix, fun) when is_function(fun, 2) do
+    %Max{matrix | array: :array.map(fun, array)}
+  end
+
+  @spec sparse_map(t, fun) :: t
+  def sparse_map(%Max{array: array} = matrix, fun) when is_function(fun, 2) do
+    %Max{matrix | array: :array.sparse_map(fun, array)}
+  end
+
+  @spec foldl(t, function, any) :: any
+  def foldl(%Max{array: array}, fun, acc) when is_function(fun, 3) do
+    :array.foldl(fun, acc, array)
+  end
+
+  @spec foldr(t, function, any) :: any
+  def foldr(%Max{array: array}, fun, acc) when is_function(fun, 3) do
+    :array.foldr(fun, acc, array)
   end
 
   @spec sparse_foldl(t, function, any) :: any
@@ -182,34 +295,120 @@ defmodule Max do
     :array.sparse_foldl(fun, acc, array)
   end
 
-  @spec reset(t, position) :: t
-  def reset(%Max{array: array} = max, position) do
-    index = position_to_index(max, position)
+  @spec sparse_foldr(t, function, any) :: any
+  def sparse_foldr(%Max{array: array}, fun, acc) when is_function(fun, 3) do
+    :array.sparse_foldr(fun, acc, array)
+  end
 
-    %Max{max | array: :array.reset(index, array)}
+  @spec reset(t, position) :: t
+  def reset(%Max{array: array} = matrix, position) do
+    index = position_to_index(matrix, position)
+
+    %Max{matrix | array: :array.reset(index, array)}
+  end
+
+  @spec row(t, non_neg_integer) :: t
+  def row(%Max{rows: rows, columns: columns} = matrix, row) when row in 0..(rows - 1) do
+    for col <- 0..(columns - 1) do
+      get(matrix, {row, col})
+    end
+    |> from_list(1, columns, default: default(matrix))
+  end
+
+  @spec column(t, non_neg_integer) :: t
+  def column(%Max{rows: rows, columns: columns} = matrix, col) when col in 0..(columns - 1) do
+    for row <- 0..(rows - 1) do
+      get(matrix, {row, col})
+    end
+    |> from_list(rows, 1, default: default(matrix))
   end
 
   @spec row_to_list(t, non_neg_integer) :: list
-  def row_to_list(%Max{rows: rows, columns: columns} = max, row) when row in 0..(rows - 1) do
+  def row_to_list(%Max{rows: rows, columns: columns} = matrix, row) when row in 0..(rows - 1) do
     for col <- 0..(columns - 1) do
-      get(max, {row, col})
+      get(matrix, {row, col})
     end
   end
 
   @spec column_to_list(t, non_neg_integer) :: list
-  def column_to_list(%Max{rows: rows, columns: columns} = max, col)
+  def column_to_list(%Max{rows: rows, columns: columns} = matrix, col)
       when col in 0..(columns - 1) do
     for row <- 0..(rows - 1) do
-      get(max, {row, col})
+      get(matrix, {row, col})
     end
   end
 
   @spec to_list_of_lists(t) :: list
-  def to_list_of_lists(%Max{rows: rows, columns: columns} = max) do
+  def to_list_of_lists(%Max{rows: rows, columns: columns} = matrix) do
     for row <- 0..(rows - 1) do
       for col <- 0..(columns - 1) do
-        get(max, {row, col})
+        get(matrix, {row, col})
       end
     end
+  end
+
+  @spec concat(nonempty_list(t), :rows | :columns, list) :: t | no_return
+  def concat([%Max{rows: rows, columns: columns} | _] = list, concat_type, options \\ [])
+      when length(list) > 0 do
+    default = Keyword.get(options, :default, :undefined)
+
+    can_concat? =
+      case concat_type do
+        :columns ->
+          list |> Enum.all?(&(&1.rows == rows))
+
+        :rows ->
+          list |> Enum.all?(&(&1.columns == columns))
+      end
+
+    if not can_concat? do
+      raise ArgumentError,
+            "When concatenating by #{inspect(concat_type)} all matrices should " <>
+              "have the same number of #{if(concat_type == :row, do: "columns", else: "rows")}"
+    end
+
+    size =
+      list
+      |> Enum.map(&count/1)
+      |> Enum.sum()
+
+    array = :array.new(size, default: default)
+
+    {rows, columns} =
+      case concat_type do
+        :rows ->
+          {round(size / columns), columns}
+
+        :columns ->
+          {rows, round(size / rows)}
+      end
+
+    matrix = %Max{array: array, rows: rows, columns: columns}
+
+    do_concat(list, matrix, 0, 0, concat_type)
+  end
+
+  defp do_concat([], matrix, _, _, _), do: matrix
+
+  defp do_concat([%Max{rows: rows} | tail], matrix, target_index, source_index, :rows)
+       when source_index == rows do
+    do_concat(tail, matrix, target_index, 0, :rows)
+  end
+
+  defp do_concat([%Max{columns: columns} | tail], matrix, target_index, source_index, :columns)
+       when source_index == columns do
+    do_concat(tail, matrix, target_index, 0, :columns)
+  end
+
+  defp do_concat([head | _] = list, matrix, target_index, source_index, concat_type) do
+    matrix =
+      case concat_type do
+        :rows ->
+          set_row(matrix, target_index, head |> row(source_index))
+        :columns ->
+          set_column(matrix, target_index, head |> column(source_index))
+      end
+
+    do_concat(list, matrix, target_index + 1, source_index + 1, concat_type)
   end
 end

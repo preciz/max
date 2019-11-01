@@ -1,12 +1,11 @@
 defmodule Max do
-  @enforce_keys [:array, :rows, :columns, :default]
-  defstruct [:array, :rows, :columns, :default]
+  @enforce_keys [:array, :rows, :columns]
+  defstruct [:array, :rows, :columns]
 
   @type t :: %Max{
           array: tuple,
           rows: pos_integer,
-          columns: pos_integer,
-          default: any
+          columns: pos_integer
         }
 
   @type position :: {row :: non_neg_integer, col :: non_neg_integer}
@@ -20,20 +19,115 @@ defmodule Max do
     %Max{
       array: array,
       rows: rows,
-      columns: columns,
-      default: default
+      columns: columns
     }
   end
 
+  @spec from_list(nonempty_list, pos_integer, pos_integer, list) :: t
+  def from_list(list, rows, columns, options \\ []) do
+    default = Keyword.get(options, :default, :undefined)
+
+    array =
+      :array.resize(
+        rows * columns,
+        :array.from_list(list, default)
+      )
+      |> :array.fix()
+
+    %Max{
+      array: array,
+      rows: rows,
+      columns: columns
+    }
+  end
+
+  @spec from_list_of_lists(nonempty_list(nonempty_list), list) :: t
+  def from_list_of_lists([h | _] = list, options \\ []) do
+    default = Keyword.get(options, :default, :undefined)
+
+    rows = length(list)
+    columns = length(h)
+
+    array =
+      :array.resize(
+        rows * columns,
+        :array.from_list(List.flatten(list), default)
+      )
+      |> :array.fix()
+
+    %Max{
+      array: array,
+      rows: rows,
+      columns: columns
+    }
+  end
+
+  @doc """
+  Returns the default value for matrix.
+
+  ## Examples
+
+      iex> matrix = Max.from_list_of_lists([[1,2], [3,4]])
+      iex> matrix |> Max.default()
+      :undefined
+      iex> matrix = Max.new(5, 5, default: "preciz")
+      iex> matrix |> Max.default()
+      "preciz"
+
+  """
+  @spec default(t) :: any
+  def default(%Max{array: array}), do: :array.default(array)
+
+  @doc """
+  Returns the element count of matrix. (rows * columns)
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5)
+      iex> Max.count(matrix)
+      25
+
+  """
   @spec count(t) :: pos_integer
   def count(%Max{rows: rows, columns: columns}) do
     rows * columns
   end
 
+  @doc """
+  Returns a position tuple for the given index.
+
+  `:array` indices are 0 based.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5)
+      iex> matrix |> Max.position_to_index({0, 0})
+      0
+      iex> matrix |> Max.position_to_index({1, 0})
+      5
+
+  """
   @spec position_to_index(t, position) :: pos_integer
   def position_to_index(%Max{rows: rows, columns: columns}, {row, col})
       when row >= 0 and row < rows and col >= 0 and col < columns do
     row * columns + col
+  end
+
+  @doc """
+  Returns array index corresponding to the position tuple.
+
+  ## Examples
+
+      iex> matrix = Max.new(10, 10)
+      iex> matrix |> Max.position_to_index({1, 1})
+      11
+      iex> matrix |> Max.position_to_index({0, 4})
+      4
+
+  """
+  @spec index_to_position(t, non_neg_integer) :: position
+  def index_to_position(%Max{columns: columns}, index) do
+    {div(index, columns), rem(index, columns)}
   end
 
   @spec get(t, position) :: any
@@ -56,20 +150,20 @@ defmodule Max do
   end
 
   @spec min(t) :: any
-  def min(%Max{default: default} = max) do
+  def min(%Max{} = max) do
     sparse_foldl(
       max,
       fn _, value, acc -> min(value, acc) end,
-      default
+      default(max)
     )
   end
 
   @spec max(t) :: any
-  def max(%Max{default: default} = max) do
+  def max(%Max{} = max) do
     sparse_foldl(
       max,
       fn _, value, acc -> max(value, acc) end,
-      default
+      default(max)
     )
   end
 
@@ -78,7 +172,6 @@ defmodule Max do
     %Max{max | rows: rows, columns: columns}
   end
 
-  # change function from (index,val) to (position, val) ?
   @spec map(t, fun) :: t
   def map(%Max{array: array} = max, fun) when is_function(fun, 2) do
     %Max{max | array: :array.map(fun, array)}

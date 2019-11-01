@@ -265,6 +265,27 @@ defmodule Max do
     )
   end
 
+  @spec member?(t, any) :: boolean
+  def member?(%Max{array: array} = matrix, term) do
+    if (:array.sparse_size(array) < count(matrix)) && (default(matrix) == term) do
+      true
+    else
+      try do
+        sparse_foldl(
+          matrix,
+          fn
+            _, ^term, _ -> throw(:found)
+            _, _, _ -> false
+          end,
+          false
+        )
+      catch
+        :throw, :found ->
+          true
+      end
+    end
+  end
+
   @spec reshape(t, pos_integer, pos_integer) :: t
   def reshape(%Max{} = matrix, rows, columns) do
     %Max{matrix | rows: rows, columns: columns}
@@ -494,6 +515,52 @@ defmodule Max do
         to_array = :array.set(to_index, value, to_array)
 
         do_drop_column(from_array, to_array, from_index + 1, to_index + 1, size, column_index, columns)
+    end
+  end
+
+  defimpl Enumerable do
+    @moduledoc false
+
+    alias Max
+
+    def count(%Max{} = matrix) do
+      {:ok, Max.count(matrix)}
+    end
+
+    def member?(%Max{} = matrix, term) do
+      {:ok, Max.member?(matrix, term)}
+    end
+
+    def slice(%Max{array: array} = matrix) do
+      {
+        :ok,
+        Max.count(matrix),
+        fn start, length ->
+          do_slice(array, start, length)
+        end
+      }
+    end
+
+    defp do_slice(_, _, 0), do: []
+
+    defp do_slice(array, index, length) do
+      [:array.get(index, array) | do_slice(array, index + 1, length - 1)]
+    end
+
+    def reduce(%Max{array: array} = matrix, acc, fun) do
+      do_reduce({array, 0, Max.count(matrix)}, acc, fun)
+    end
+
+    defp do_reduce(_, {:halt, acc}, _fun), do: {:halted, acc}
+    defp do_reduce(tuple, {:suspend, acc}, fun), do: {:suspended, acc, &do_reduce(tuple, &1, fun)}
+    defp do_reduce({_, same, same}, {:cont, acc}, _fun), do: {:done, acc}
+
+    defp do_reduce({array, index, count}, {:cont, acc}, fun) do
+      do_reduce(
+        {array, index + 1, count},
+        fun.(:array.get(index, array), acc),
+        fun
+      )
     end
   end
 end

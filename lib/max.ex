@@ -453,11 +453,11 @@ defmodule Max do
     %Max{array: to_array, rows: rows - 1, columns: columns}
   end
 
-  def do_drop_row(_, to_array, from_index, _, size, _, _) when from_index == size do
+  defp do_drop_row(_, to_array, from_index, _, size, _, _) when from_index == size do
     to_array
   end
 
-  def do_drop_row(from_array, to_array, from_index, to_index, size, skip_from, skip_to) do
+  defp do_drop_row(from_array, to_array, from_index, to_index, size, skip_from, skip_to) do
     case from_index >= skip_from && from_index < skip_to do
       true ->
         do_drop_row(from_array, to_array, from_index + 1, to_index, size, skip_from, skip_to)
@@ -480,11 +480,11 @@ defmodule Max do
     %Max{array: to_array, rows: rows, columns: columns - 1}
   end
 
-  def do_drop_column(_, to_array, from_index, _, size, _, _) when from_index == size do
+  defp do_drop_column(_, to_array, from_index, _, size, _, _) when from_index == size do
     to_array
   end
 
-  def do_drop_column(from_array, to_array, from_index, to_index, size, column_index, columns) do
+  defp do_drop_column(from_array, to_array, from_index, to_index, size, column_index, columns) do
     case rem(from_index, columns) do
       ^column_index ->
         do_drop_column(from_array, to_array, from_index + 1, to_index, size, column_index, columns)

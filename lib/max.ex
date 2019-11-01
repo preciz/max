@@ -79,18 +79,23 @@ defmodule Max do
   def default(%Max{array: array}), do: :array.default(array)
 
   @doc """
-  Returns the element count of matrix. (rows * columns)
+  Returns the size of matrix. (rows * columns)
 
   ## Examples
 
       iex> matrix = Max.new(5, 5)
-      iex> Max.count(matrix)
+      iex> Max.size(matrix)
       25
 
   """
-  @spec count(t) :: pos_integer
-  def count(%Max{rows: rows, columns: columns}) do
+  @spec size(t) :: pos_integer
+  def size(%Max{rows: rows, columns: columns}) do
     rows * columns
+  end
+
+  @spec sparse_size(t) :: pos_integer
+  def sparse_size(%Max{array: array}) do
+    :array.sparse_size(array)
   end
 
   @doc """
@@ -267,7 +272,7 @@ defmodule Max do
 
   @spec member?(t, any) :: boolean
   def member?(%Max{array: array} = matrix, term) do
-    if (:array.sparse_size(array) < count(matrix)) && (default(matrix) == term) do
+    if :array.sparse_size(array) < size(matrix) && default(matrix) == term do
       true
     else
       try do
@@ -390,7 +395,7 @@ defmodule Max do
 
     size =
       list
-      |> Enum.map(&count/1)
+      |> Enum.map(&size/1)
       |> Enum.sum()
 
     array = :array.new(size, default: default)
@@ -469,7 +474,16 @@ defmodule Max do
       when rows > 1 and row_index >= 0 and row_index < rows do
     to_array = :array.new((rows - 1) * columns, fixed: true, default: default(matrix))
 
-    to_array = do_drop_row(from_array, to_array, 0, 0, count(matrix), row_index * columns, (row_index + 1) * columns)
+    to_array =
+      do_drop_row(
+        from_array,
+        to_array,
+        0,
+        0,
+        size(matrix),
+        row_index * columns,
+        (row_index + 1) * columns
+      )
 
     %Max{array: to_array, rows: rows - 1, columns: columns}
   end
@@ -482,6 +496,7 @@ defmodule Max do
     case from_index >= skip_from && from_index < skip_to do
       true ->
         do_drop_row(from_array, to_array, from_index + 1, to_index, size, skip_from, skip_to)
+
       false ->
         value = :array.get(from_index, from_array)
 
@@ -496,7 +511,7 @@ defmodule Max do
       when columns > 1 and column_index >= 0 and column_index < columns do
     to_array = :array.new(rows * (columns - 1), fixed: true, default: default(matrix))
 
-    to_array = do_drop_column(from_array, to_array, 0, 0, count(matrix), column_index, columns)
+    to_array = do_drop_column(from_array, to_array, 0, 0, size(matrix), column_index, columns)
 
     %Max{array: to_array, rows: rows, columns: columns - 1}
   end
@@ -508,24 +523,40 @@ defmodule Max do
   defp do_drop_column(from_array, to_array, from_index, to_index, size, column_index, columns) do
     case rem(from_index, columns) do
       ^column_index ->
-        do_drop_column(from_array, to_array, from_index + 1, to_index, size, column_index, columns)
+        do_drop_column(
+          from_array,
+          to_array,
+          from_index + 1,
+          to_index,
+          size,
+          column_index,
+          columns
+        )
+
       _else ->
         value = :array.get(from_index, from_array)
 
         to_array = :array.set(to_index, value, to_array)
 
-        do_drop_column(from_array, to_array, from_index + 1, to_index + 1, size, column_index, columns)
+        do_drop_column(
+          from_array,
+          to_array,
+          from_index + 1,
+          to_index + 1,
+          size,
+          column_index,
+          columns
+        )
     end
   end
 
   @spec transpose(t) :: t
   def transpose(%Max{rows: rows, columns: columns} = matrix) do
-    t_matrix =
-      %Max{
-        array: :array.new(rows * columns, fixed: true, default: default(matrix)),
-        rows: columns,
-        columns: rows
-      }
+    t_matrix = %Max{
+      array: :array.new(rows * columns, fixed: true, default: default(matrix)),
+      rows: columns,
+      columns: rows
+    }
 
     sparse_foldl(
       matrix,
@@ -549,7 +580,7 @@ defmodule Max do
         {0, 0}
       )
 
-    (count(matrix) - n) * default(matrix) + acc_val
+    (size(matrix) - n) * default(matrix) + acc_val
   end
 
   @spec trace(t) :: number
@@ -565,7 +596,7 @@ defmodule Max do
     alias Max
 
     def count(%Max{} = matrix) do
-      {:ok, Max.count(matrix)}
+      {:ok, Max.size(matrix)}
     end
 
     def member?(%Max{} = matrix, term) do
@@ -575,7 +606,7 @@ defmodule Max do
     def slice(%Max{array: array} = matrix) do
       {
         :ok,
-        Max.count(matrix),
+        Max.size(matrix),
         fn start, length ->
           do_slice(array, start, length)
         end
@@ -589,7 +620,7 @@ defmodule Max do
     end
 
     def reduce(%Max{array: array} = matrix, acc, fun) do
-      do_reduce({array, 0, Max.count(matrix)}, acc, fun)
+      do_reduce({array, 0, Max.size(matrix)}, acc, fun)
     end
 
     defp do_reduce(_, {:halt, acc}, _fun), do: {:halted, acc}

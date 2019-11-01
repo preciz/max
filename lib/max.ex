@@ -291,6 +291,26 @@ defmodule Max do
     end
   end
 
+  @spec find(t, any) :: position
+  def find(%Max{} = matrix, term) do
+    try do
+      default_is_term? = default(matrix) == term
+
+      throw_found = fn
+        index, ^term, _ -> throw({:found, index})
+        _, _, _ -> nil
+      end
+
+      case default_is_term? do
+        true -> foldl(matrix, throw_found, nil)
+        false -> sparse_foldl(matrix, throw_found, nil)
+      end
+    catch
+      :throw, {:found, index} ->
+        index_to_position(matrix, index)
+    end
+  end
+
   @spec reshape(t, pos_integer, pos_integer) :: t
   def reshape(%Max{} = matrix, rows, columns) do
     %Max{matrix | rows: rows, columns: columns}

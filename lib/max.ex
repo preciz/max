@@ -610,6 +610,40 @@ defmodule Max do
     |> sum()
   end
 
+  @spec flip_lr(t) :: t
+  def flip_lr(%Max{columns: columns} = matrix) do
+    new_matrix = %Max{matrix | array: :array.new(size(matrix), fixed: true, default: default(matrix))}
+
+    sparse_foldl(
+      matrix,
+      fn index, val, acc ->
+        {row, col} = index_to_position(matrix, index)
+
+        new_col = columns - 1 - col
+
+        acc |> set({row, new_col}, val)
+      end,
+      new_matrix
+    )
+  end
+
+  @spec flip_ud(t) :: t
+  def flip_ud(%Max{rows: rows} = matrix) do
+    new_matrix = %Max{matrix | array: :array.new(size(matrix), fixed: true, default: default(matrix))}
+
+    sparse_foldl(
+      matrix,
+      fn index, val, acc ->
+        {row, col} = index_to_position(matrix, index)
+
+        new_row = rows - 1 - row
+
+        acc |> set({new_row, col}, val)
+      end,
+      new_matrix
+    )
+  end
+
   defimpl Enumerable do
     @moduledoc false
 

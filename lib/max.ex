@@ -617,7 +617,10 @@ defmodule Max do
 
   @spec flip_lr(t) :: t
   def flip_lr(%Max{columns: columns} = matrix) do
-    new_matrix = %Max{matrix | array: :array.new(size(matrix), fixed: true, default: default(matrix))}
+    new_matrix = %Max{
+      matrix
+      | array: :array.new(size(matrix), fixed: true, default: default(matrix))
+    }
 
     sparse_foldl(
       matrix,
@@ -634,7 +637,10 @@ defmodule Max do
 
   @spec flip_ud(t) :: t
   def flip_ud(%Max{rows: rows} = matrix) do
-    new_matrix = %Max{matrix | array: :array.new(size(matrix), fixed: true, default: default(matrix))}
+    new_matrix = %Max{
+      matrix
+      | array: :array.new(size(matrix), fixed: true, default: default(matrix))
+    }
 
     sparse_foldl(
       matrix,

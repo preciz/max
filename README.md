@@ -1,11 +1,27 @@
 # Max
 
-**TODO: Add description**
+A matrix library in pure Elixir based on `:array`.
+
+```elixir
+iex> matrix = Max.new(5, 5, default: 2) # 5x5 matrix with default value 2
+iex> matrix = Max.set(matrix, {0, 0}, 8) # set position {0, 0} to 8
+iex> Max.get(matrix, {0, 0})
+8
+iex> Max.to_list_of_lists(matrix)
+[
+  [8, 2, 2, 2, 2],
+  [2, 2, 2, 2, 2],
+  [2, 2, 2, 2, 2],
+  [2, 2, 2, 2, 2],
+  [2, 2, 2, 2, 2]
+]
+```
+
+Documentation can be found at [https://hexdocs.pm/max](https://hexdocs.pm/max).
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `max` to your list of dependencies in `mix.exs`:
+Add `max` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -15,7 +31,6 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/max](https://hexdocs.pm/max).
+## License
 
+Max is [MIT licensed](LICENSE).

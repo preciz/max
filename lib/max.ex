@@ -1,4 +1,32 @@
 defmodule Max do
+  @moduledoc """
+  A matrix library in pure Elixir based on `:array`.
+
+  [Erlang array documentation](http://erlang.org/doc/man/array.html)
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 2) # 5x5 matrix with default value 2
+      iex> Max.get(matrix, {0, 0})
+      2
+      iex> matrix = Max.set(matrix, {0, 0}, 8)
+      iex> Max.get(matrix, {0, 0})
+      8
+
+  ## Enumberable protocol
+
+  `Max` implements the Enumerable protocol, so all Enum functions can be used:
+
+      iex> matrix = Max.new(10, 10, default: 8)
+      iex> Enum.max(matrix)
+      8
+      iex> Enum.member?(matrix, 7)
+      false
+
+  """
+
+  @compile {:inline, get: 2, set: 3, index_to_position: 2, position_to_index: 2, size: 1}
+
   @enforce_keys [:array, :rows, :columns]
   defstruct [:array, :rows, :columns]
 
@@ -10,6 +38,17 @@ defmodule Max do
 
   @type position :: {row :: non_neg_integer, col :: non_neg_integer}
 
+  @doc """
+  Returns a new `%Max{}` struct with the given `rows` and `columns` size.
+
+  ## Options
+    * `:default` - (term) the default value of the matrix. Defaults to `:undefined`.
+
+  ## Examples
+
+       Max.new(10, 5) # 10 x 5 matrix
+       Max.new(10, 5, default: 70) # 70 as a default value
+  """
   @spec new(pos_integer, pos_integer, list) :: t
   def new(rows, columns, options \\ []) do
     default = Keyword.get(options, :default, :undefined)
@@ -23,6 +62,19 @@ defmodule Max do
     }
   end
 
+  @doc """
+  Converts a flat list to a new `%Max{}` struct with the given `rows` & `columns` size.
+
+  ## Options
+    * `:default` - (term) the default value of the matrix. Defaults to `:undefined`.
+
+  ## Examples
+
+       iex> matrix = Max.from_list([1,2,3,4,5,6], 2, 3)
+       iex> matrix |> Max.to_list_of_lists
+       [[1,2,3], [4, 5, 6]]
+
+  """
   @spec from_list(nonempty_list, pos_integer, pos_integer, list) :: t
   def from_list(list, rows, columns, options \\ []) do
     default = Keyword.get(options, :default, :undefined)
@@ -41,6 +93,19 @@ defmodule Max do
     }
   end
 
+  @doc """
+  Converts a list of lists matrix to a new `%Max{}` struct.
+
+  ## Options
+    * `:default` - (term) the default value of the matrix. Defaults to `:undefined`.
+
+  ## Examples
+
+       iex> matrix = %Max{rows: 2, columns: 3} = Max.from_list_of_lists([[1,2,3], [4, 5, 6]])
+       iex> matrix |> Max.to_list_of_lists
+       [[1,2,3], [4, 5, 6]]
+
+  """
   @spec from_list_of_lists(nonempty_list(nonempty_list), list) :: t
   def from_list_of_lists([h | _] = list, options \\ []) do
     default = Keyword.get(options, :default, :undefined)
@@ -93,6 +158,19 @@ defmodule Max do
     rows * columns
   end
 
+  @doc """
+  Returns the sparse size of the `:array`.
+
+  Erlang array docs:
+  "Gets the number of entries in the array up until the last non-default-valued entry. That is, returns I+1 if I is the last non-default-valued entry in the array, or zero if no such entry exists."
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5)
+      iex> Max.sparse_size(matrix)
+      0
+
+  """
   @spec sparse_size(t) :: pos_integer
   def sparse_size(%Max{array: array}) do
     :array.sparse_size(array)
@@ -135,6 +213,16 @@ defmodule Max do
     {div(index, columns), rem(index, columns)}
   end
 
+  @doc """
+  Returns value at `position` from the given `matrix`.
+
+  ## Examples
+
+      iex> matrix = Max.identity(5)
+      iex> matrix |> Max.get({1, 1})
+      1
+
+  """
   @spec get(t, position) :: any
   def get(%Max{array: array} = matrix, position) do
     index = position_to_index(matrix, position)
@@ -142,6 +230,19 @@ defmodule Max do
     :array.get(index, array)
   end
 
+  @doc """
+  Sets `value` at `position` in `matrix`.
+
+  Returns `%Max{}` struct.
+
+  ## Examples
+
+      iex> matrix = Max.new(10, 10)
+      iex> matrix = matrix |> Max.set({1, 3}, 5)
+      iex> matrix |> Max.get({1, 3})
+      5
+
+  """
   @spec set(t, position, any) :: t
   def set(%Max{array: array} = matrix, position, value) do
     index = position_to_index(matrix, position)
@@ -149,6 +250,23 @@ defmodule Max do
     %Max{matrix | array: :array.set(index, value, array)}
   end
 
+  @doc """
+  Set row of a matrix at `row_index` to the values from the given 1-row matrix.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1)
+      iex> row_matrix = Max.new(1, 5, default: 3)
+      iex> Max.set_row(matrix, 2, row_matrix) |> Max.to_list_of_lists()
+      [
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [3, 3, 3, 3, 3],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+      ]
+
+  """
   @spec set_row(t, non_neg_integer, t) :: t
   def set_row(
         %Max{columns: columns} = matrix,
@@ -165,6 +283,23 @@ defmodule Max do
     end)
   end
 
+  @doc """
+  Set column of a matrix at `column_index` to the values from the given 1-column matrix.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1)
+      iex> column_matrix = Max.new(5, 1, default: 3)
+      iex> Max.set_column(matrix, 2, column_matrix) |> Max.to_list_of_lists
+      [
+        [1, 1, 3, 1, 1],
+        [1, 1, 3, 1, 1],
+        [1, 1, 3, 1, 1],
+        [1, 1, 3, 1, 1],
+        [1, 1, 3, 1, 1],
+      ]
+
+  """
   @spec set_column(t, non_neg_integer, t) :: t
   def set_column(
         %Max{rows: rows} = matrix,
@@ -181,11 +316,31 @@ defmodule Max do
     end)
   end
 
+  @doc """
+  Converts matrix to a flat list.
+
+  ## Examples
+
+      iex> matrix = Max.new(3, 3) |> Max.map(fn index, _val -> index end)
+      iex> Max.to_list(matrix)
+      [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+  """
   @spec to_list(t) :: list
   def to_list(%Max{array: array}) do
     :array.to_list(array)
   end
 
+  @doc """
+  Returns smallest value in matrix using `Kernel.min/2`.
+
+  ## Examples
+
+      iex> matrix = Max.new(10, 10, default: 7)
+      iex> matrix |> Max.min()
+      7
+
+  """
   @spec min(t) :: any
   def min(%Max{} = matrix) do
     {_index, value} = do_argmin(matrix)
@@ -193,6 +348,16 @@ defmodule Max do
     value
   end
 
+  @doc """
+  Returns largest value in matrix using `Kernel.max/2`.
+
+  ## Examples
+
+      iex> matrix = Max.new(10, 10) |> Max.map(fn index, _ -> index end)
+      iex> matrix |> Max.max()
+      99
+
+  """
   @spec max(t) :: any
   def max(%Max{} = matrix) do
     {_index, value} = do_argmax(matrix)
@@ -201,6 +366,8 @@ defmodule Max do
   end
 
   @doc """
+  Returns position tuple of smallest value.
+
   ## Examples
 
       iex> matrix = Max.new(5, 5, default: 8)
@@ -219,6 +386,8 @@ defmodule Max do
   end
 
   @doc """
+  Returns position tuple of largest value.
+
   ## Examples
 
       iex> matrix = Max.new(5, 5, default: 8)
@@ -296,6 +465,19 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Checks for membership of given `term`.
+  Returns `true` if member, `false` otherwise.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5) |> Max.map(fn i, _ -> i end)
+      iex> matrix |> Max.member?(6)
+      true
+      iex> matrix |> Max.member?(100)
+      false
+
+  """
   @spec member?(t, any) :: boolean
   def member?(%Max{array: array} = matrix, term) do
     if :array.sparse_size(array) < size(matrix) && default(matrix) == term do
@@ -626,9 +808,10 @@ defmodule Max do
         {0, 0}
       )
 
-    case (size(matrix) - n) do
+    case size(matrix) - n do
       0 ->
         acc_val
+
       default_values_skipped ->
         default_values_skipped * default(matrix) + acc_val
     end
@@ -716,12 +899,11 @@ defmodule Max do
       when left_columns == right_rows do
     array = :array.new(left_rows * right_columns, fixed: true)
 
-    matrix =
-      %Max{
-        array: array,
-        rows: left_rows,
-        columns: right_columns
-      }
+    matrix = %Max{
+      array: array,
+      rows: left_rows,
+      columns: right_columns
+    }
 
     left_cache =
       for row_i <- 0..(left_rows - 1), into: %{} do
@@ -741,7 +923,8 @@ defmodule Max do
         multiply(
           Map.get(left_cache, row),
           Map.get(right_cache, col)
-        ) |> sum()
+        )
+        |> sum()
       end
     )
   end

@@ -499,7 +499,22 @@ defmodule Max do
     end
   end
 
-  @spec find(t, any) :: position
+  @doc """
+  Returns position of the first occurence of the given `value`
+  or `nil ` if nothing was found.
+
+  ## Examples
+
+      iex> Max.new(5, 5) |> Max.find(0)
+      {0, 0}
+      iex> matrix = Max.new(5, 5) |> Max.map(fn i, _v -> i end)
+      iex> matrix |> Max.find(16)
+      {3, 1}
+      iex> matrix |> Max.find(42)
+      nil
+
+  """
+  @spec find(t, any) :: position | nil
   def find(%Max{} = matrix, term) do
     try do
       default_is_term? = default(matrix) == term
@@ -519,41 +534,139 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Reshapes `matrix` to the given `rows` & `columns`.
+
+  ## Examples
+
+      iex> matrix = Max.identity(4)
+      iex> matrix |> Max.to_list_of_lists()
+      [
+          [1, 0, 0, 0],
+          [0, 1, 0, 0],
+          [0, 0, 1, 0],
+          [0, 0, 0, 1]
+      ]
+      iex> matrix |> Max.reshape(2, 8) |> Max.to_list_of_lists()
+      [
+          [1, 0, 0, 0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0, 0, 0, 1]
+      ]
+
+  """
   @spec reshape(t, pos_integer, pos_integer) :: t
   def reshape(%Max{} = matrix, rows, columns) do
     %Max{matrix | rows: rows, columns: columns}
   end
 
+  @doc """
+  Maps each element to the result of the a given `fun`.
+
+  The given `fun` receives the index as first and
+  value as the second argument.
+  To convert index to position use `index_to_position/2`.
+
+  ## Examples
+
+      iex> matrix = Max.new(10, 10, default: 2)
+      iex> matrix = Max.map(matrix, fn _index, value -> value + 2 end)
+      iex> matrix |> Max.get({0, 0})
+      4
+
+  """
   @spec map(t, fun) :: t
   def map(%Max{array: array} = matrix, fun) when is_function(fun, 2) do
     %Max{matrix | array: :array.map(fun, array)}
   end
 
+  @doc """
+  Same as `map/2` except it skips default valued elements.
+
+  ## Examples
+
+      iex> matrix = Max.new(10, 10, default: 2)
+      iex> matrix = Max.sparse_map(matrix, fn _index, value -> value + 2 end)
+      iex> matrix |> Max.get({0, 0}) # value stays at 2 because it was at default
+      2
+
+  """
   @spec sparse_map(t, fun) :: t
   def sparse_map(%Max{array: array} = matrix, fun) when is_function(fun, 2) do
     %Max{matrix | array: :array.sparse_map(fun, array)}
   end
 
+  @doc """
+  Folds the elements using the specified function and initial accumulator value. The elements are visited in order from the lowest index to the highest.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1)
+      iex> matrix |> Max.foldl(fn _index, value, acc -> value + acc end, 0)
+      25
+
+  """
   @spec foldl(t, function, any) :: any
   def foldl(%Max{array: array}, fun, acc) when is_function(fun, 3) do
     :array.foldl(fun, acc, array)
   end
 
+  @doc """
+  Folds the elements right-to-left using the specified function and initial accumulator value. The elements are visited in order from the highest index to the lowest.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1)
+      iex> matrix |> Max.foldr(fn _index, value, acc -> value + acc end, 0)
+      25
+
+  """
   @spec foldr(t, function, any) :: any
   def foldr(%Max{array: array}, fun, acc) when is_function(fun, 3) do
     :array.foldr(fun, acc, array)
   end
 
+  @doc """
+  Folds the elements using the specified function and initial accumulator value, skipping default-valued entries. The elements are visited in order from the lowest index to the highest.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1)
+      iex> matrix |> Max.sparse_foldl(fn _index, value, acc -> value + acc end, 0)
+      0
+
+  """
   @spec sparse_foldl(t, function, any) :: any
   def sparse_foldl(%Max{array: array}, fun, acc) when is_function(fun, 3) do
     :array.sparse_foldl(fun, acc, array)
   end
 
+  @doc """
+  Folds the array elements right-to-left using the specified function and initial accumulator value, skipping default-valued entries. The elements are visited in order from the highest index to the lowest.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1)
+      iex> matrix |> Max.sparse_foldr(fn _index, value, acc -> value + acc end, 0)
+      0
+
+  """
   @spec sparse_foldr(t, function, any) :: any
   def sparse_foldr(%Max{array: array}, fun, acc) when is_function(fun, 3) do
     :array.sparse_foldr(fun, acc, array)
   end
 
+  @doc """
+  Resets element at position to the default value.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 1) |> Max.map(fn _,_ -> 7 end)
+      iex> matrix |> Max.get({0, 0})
+      7
+      iex> matrix |> Max.reset({0, 0}) |> Max.get({0, 0})
+      1
+
+  """
   @spec reset(t, position) :: t
   def reset(%Max{array: array} = matrix, position) do
     index = position_to_index(matrix, position)
@@ -561,6 +674,16 @@ defmodule Max do
     %Max{matrix | array: :array.reset(index, array)}
   end
 
+  @doc """
+  Reduces matrix to only one row at given `row` index.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 3)
+      iex> matrix |> Max.row(4) |> Max.to_list_of_lists
+      [[3, 3, 3, 3, 3]]
+
+  """
   @spec row(t, non_neg_integer) :: t
   def row(%Max{rows: rows, columns: columns} = matrix, row) when row in 0..(rows - 1) do
     for col <- 0..(columns - 1) do
@@ -569,6 +692,16 @@ defmodule Max do
     |> from_list(1, columns, default: default(matrix))
   end
 
+  @doc """
+  Reduces matrix to only one column at given `col` index.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5, default: 3)
+      iex> matrix |> Max.column(4) |> Max.to_list_of_lists
+      [[3], [3], [3], [3], [3]]
+
+  """
   @spec column(t, non_neg_integer) :: t
   def column(%Max{rows: rows, columns: columns} = matrix, col) when col in 0..(columns - 1) do
     for row <- 0..(rows - 1) do
@@ -577,6 +710,16 @@ defmodule Max do
     |> from_list(rows, 1, default: default(matrix))
   end
 
+  @doc """
+  Converts row at given row index of matrix to list.
+
+  ## Examples
+
+      iex> matrix = Max.identity(5)
+      iex> matrix |> Max.row_to_list(2)
+      [0, 0, 1, 0, 0]
+
+  """
   @spec row_to_list(t, non_neg_integer) :: list
   def row_to_list(%Max{rows: rows, columns: columns} = matrix, row) when row in 0..(rows - 1) do
     for col <- 0..(columns - 1) do
@@ -584,6 +727,16 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Converts column at given column index of matrix to list.
+
+  ## Examples
+
+      iex> matrix = Max.identity(5)
+      iex> matrix |> Max.column_to_list(0)
+      [1, 0, 0, 0, 0]
+
+  """
   @spec column_to_list(t, non_neg_integer) :: list
   def column_to_list(%Max{rows: rows, columns: columns} = matrix, col)
       when col in 0..(columns - 1) do
@@ -592,6 +745,22 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Converts matrix to list of lists.
+
+  ## Examples
+
+      iex> matrix = Max.new(5, 5) |> Max.map(fn i, _v -> i + 1 end)
+      iex> Max.to_list_of_lists(matrix)
+      [
+        [1, 2, 3, 4, 5],
+        [6, 7, 8, 9, 10],
+        [11, 12, 13, 14, 15],
+        [16, 17, 18, 19, 20],
+        [21, 22, 23, 24, 25],
+      ]
+
+  """
   @spec to_list_of_lists(t) :: list
   def to_list_of_lists(%Max{rows: rows, columns: columns} = matrix) do
     for row <- 0..(rows - 1) do
@@ -702,6 +871,22 @@ defmodule Max do
     do_concat(list, matrix, target_index + 1, source_index + 1, concat_type)
   end
 
+  @doc """
+  Returns diagonal of matrix.
+
+  ## Examples
+
+      iex> matrix = Max.identity(3)
+      iex> matrix |> Max.to_list_of_lists()
+      [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+      ]
+      iex> matrix |> Max.diagonal() |> Max.to_list_of_lists()
+      [[1, 1, 1]]
+
+  """
   @spec diagonal(t) :: t
   def diagonal(%Max{columns: columns} = matrix) do
     array = :array.new(columns, fixed: true, default: default(matrix))

@@ -1095,6 +1095,16 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Returns sum of integers in matrix.
+
+  ## Examples
+
+      iex> matrix = Max.new(3, 3, default: 1)
+      iex> matrix |> Max.sum()
+      9
+
+  """
   @spec sum(t) :: number
   def sum(%Max{} = matrix) do
     {n, acc_val} =
@@ -1115,6 +1125,16 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Trace of matrix (sum of all diagonal elements).
+
+  ## Examples
+
+      iex> matrix = Max.new(3, 3, default: 1)
+      iex> matrix |> Max.trace()
+      3
+
+  """
   @spec trace(t) :: number
   def trace(%Max{} = matrix) do
     matrix
@@ -1122,6 +1142,24 @@ defmodule Max do
     |> sum()
   end
 
+  @doc """
+  Flips columns of matrix in the left-right direction (vertical axis).
+
+  ## Examples
+
+      iex> matrix = Max.from_list_of_lists([
+      ...>    [0, 1, 2, 3],
+      ...>    [0, 1, 2, 3],
+      ...>    [0, 1, 2, 3]
+      ...>])
+      iex> matrix |> Max.flip_lr() |> Max.to_list_of_lists()
+      [
+          [3, 2, 1, 0],
+          [3, 2, 1, 0],
+          [3, 2, 1, 0]
+      ]
+
+  """
   @spec flip_lr(t) :: t
   def flip_lr(%Max{columns: columns} = matrix) do
     new_matrix = %Max{
@@ -1142,6 +1180,24 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Flip rows of matrix in the up-down direction (horizontal axis).
+
+  ## Examples
+
+      iex> matrix = Max.from_list_of_lists([
+      ...>    [0, 0, 0, 0],
+      ...>    [1, 1, 1, 1],
+      ...>    [2, 2, 2, 2]
+      ...>])
+      iex> matrix |> Max.flip_ud() |> Max.to_list_of_lists()
+      [
+          [2, 2, 2, 2],
+          [1, 1, 1, 1],
+          [0, 0, 0, 0]
+      ]
+
+  """
   @spec flip_ud(t) :: t
   def flip_ud(%Max{rows: rows} = matrix) do
     new_matrix = %Max{
@@ -1162,6 +1218,24 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Adds two matrices. Size of matrices must match.
+
+  ## Examples
+
+      iex> matrix = Max.from_list_of_lists([
+      ...>    [0, 0, 0, 0],
+      ...>    [1, 1, 1, 1],
+      ...>    [2, 2, 2, 2]
+      ...>])
+      iex> Max.add(matrix, matrix) |> Max.to_list_of_lists()
+      [
+          [0, 0, 0, 0],
+          [2, 2, 2, 2],
+          [4, 4, 4, 4]
+      ]
+
+  """
   @spec add(t, t) :: t
   def add(%Max{rows: rows, columns: columns} = left, %Max{
         array: array_right,
@@ -1176,6 +1250,24 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Elementwise multiplication of two matrices.
+
+  ## Examples
+
+      iex> matrix = Max.from_list_of_lists([
+      ...>    [0, 0, 0, 0],
+      ...>    [1, 1, 1, 1],
+      ...>    [2, 2, 2, 2]
+      ...>])
+      iex> Max.multiply(matrix, matrix) |> Max.to_list_of_lists()
+      [
+          [0, 0, 0, 0],
+          [1, 1, 1, 1],
+          [4, 4, 4, 4]
+      ]
+
+  """
   @spec multiply(t, t) :: t
   def multiply(
         %Max{rows: rows, columns: columns} = left,
@@ -1189,6 +1281,32 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Returns matrix product of the two given matrices.
+
+  Number of columns of the first matrix must be equal to the number of rows of the second matrix.
+
+  ## Examples
+
+      iex> matrix_a = Max.from_list_of_lists([
+      ...>    [-2, -2, -2, -2],
+      ...>    [8, 8, 8, 8],
+      ...>    [2, 2, 2, 2]
+      ...>])
+      iex> matrix_b = Max.from_list_of_lists([
+      ...>    [0, 0, 0, 0],
+      ...>    [1, 1, 1, 1],
+      ...>    [2, 2, 2, 2],
+      ...>    [3, 3, 3, 3]
+      ...>])
+      iex> Max.dot(matrix_a, matrix_b) |> Max.to_list_of_lists()
+      [
+        [-12, -12, -12, -12],
+        [48, 48, 48, 48],
+        [12, 12, 12, 12]
+      ]
+
+  """
   @spec dot(t, t) :: t
   def dot(
         %Max{rows: left_rows, columns: left_columns} = left,

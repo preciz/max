@@ -600,7 +600,12 @@ defmodule Max do
         {0, 0}
       )
 
-    (size(matrix) - n) * default(matrix) + acc_val
+    case (size(matrix) - n) do
+      0 ->
+        acc_val
+      default_values_skipped ->
+        default_values_skipped * default(matrix) + acc_val
+    end
   end
 
   @spec trace(t) :: number

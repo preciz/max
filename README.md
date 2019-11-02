@@ -1,6 +1,6 @@
 # Max
 
-A matrix library in pure Elixir based on `:array`.
+A matrix library in pure Elixir based on Erlang `:array`.
 
 ```elixir
 iex> matrix = Max.new(5, 5, default: 2) # 5x5 matrix with default value 2

@@ -238,36 +238,62 @@ defmodule Max do
 
   @doc false
   def do_argmin(%Max{} = matrix) do
-    sparse_foldl(
-      matrix,
-      fn index, value, {_acc_index, acc_val} = acc ->
-        case min(value, acc_val) do
-          ^acc_val ->
-            acc
-
-          _else ->
+    if sparse_size(matrix) < size(matrix) do
+      sparse_foldl(
+        matrix,
+        fn index, value, {_acc_index, acc_val} = acc ->
+          case min(value, acc_val) do
+            ^acc_val -> acc
+            _else -> {index, value}
+          end
+        end,
+        {0, default(matrix)}
+      )
+    else
+      foldl(
+        matrix,
+        fn
+          index, value, {_acc_index, acc_val} = acc ->
+            case min(value, acc_val) do
+              ^acc_val -> acc
+              _else -> {index, value}
+            end
+          index, value, nil ->
             {index, value}
-        end
-      end,
-      {0, default(matrix)}
-    )
+        end,
+        nil
+      )
+    end
   end
 
   @doc false
   def do_argmax(%Max{} = matrix) do
-    sparse_foldl(
-      matrix,
-      fn index, value, {_acc_index, acc_val} = acc ->
-        case max(value, acc_val) do
-          ^acc_val ->
-            acc
-
-          _else ->
+    if sparse_size(matrix) < size(matrix) do
+      sparse_foldl(
+        matrix,
+        fn index, value, {_acc_index, acc_val} = acc ->
+          case max(value, acc_val) do
+            ^acc_val -> acc
+            _else -> {index, value}
+          end
+        end,
+        {0, default(matrix)}
+      )
+    else
+      foldl(
+        matrix,
+        fn
+          index, value, {_acc_index, acc_val} = acc ->
+            case max(value, acc_val) do
+              ^acc_val -> acc
+              _else -> {index, value}
+            end
+          index, value, nil ->
             {index, value}
-        end
-      end,
-      {0, default(matrix)}
-    )
+        end,
+        nil
+      )
+    end
   end
 
   @spec member?(t, any) :: boolean

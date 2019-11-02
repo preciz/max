@@ -908,7 +908,7 @@ defmodule Max do
 
   ## Examples
 
-      iex> Max.identity(5) |> Matrax.to_list_of_lists()
+      iex> Max.identity(5) |> Max.to_list_of_lists()
       [
           [1, 0, 0, 0, 0],
           [0, 1, 0, 0, 0],
@@ -935,6 +935,25 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Drops row of matrix at given `row_index`.
+
+  ## Examples
+
+      iex> matrix = Max.new(3, 3) |> Max.map(fn i, _v -> i + 1 end)
+      iex> matrix |> Max.to_list_of_lists()
+      [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+      ]
+      iex> matrix |> Max.drop_row(1) |> Max.to_list_of_lists()
+      [
+        [1, 2, 3],
+        [7, 8, 9]
+      ]
+
+  """
   @spec drop_row(t, non_neg_integer) :: t
   def drop_row(%Max{array: from_array, rows: rows, columns: columns} = matrix, row_index)
       when rows > 1 and row_index >= 0 and row_index < rows do
@@ -972,6 +991,26 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Drops column of matrix at given `column_index`.
+
+  ## Examples
+
+      iex> matrix = Max.from_list_of_lists([
+      ...>     [0, 1, 2, 3, 4],
+      ...>     [0, 1, 2, 3, 4],
+      ...>     [0, 1, 2, 3, 4],
+      ...>     [0, 1, 2, 3, 4]
+      ...>   ])
+      iex> matrix |> Max.drop_column(1) |> Max.to_list_of_lists()
+      [
+          [0, 2, 3, 4],
+          [0, 2, 3, 4],
+          [0, 2, 3, 4],
+          [0, 2, 3, 4]
+      ]
+
+  """
   @spec drop_column(t, non_neg_integer) :: t
   def drop_column(%Max{array: from_array, rows: rows, columns: columns} = matrix, column_index)
       when columns > 1 and column_index >= 0 and column_index < columns do
@@ -1016,6 +1055,25 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Returns transpose of given `matrix`.
+
+  ## Examples
+
+      iex> matrix = Max.new(2, 3) |> Max.map(fn i, _v -> i end)
+      iex> matrix |> Max.to_list_of_lists()
+      [
+        [0, 1, 2],
+        [3, 4, 5]
+      ]
+      iex> matrix |> Max.transpose() |> Max.to_list_of_lists()
+      [
+        [0, 3],
+        [1, 4],
+        [2, 5]
+      ]
+
+  """
   @spec transpose(t) :: t
   def transpose(%Max{rows: rows, columns: columns} = matrix) do
     t_matrix = %Max{

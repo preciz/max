@@ -1077,21 +1077,18 @@ defmodule Max do
 
   """
   @spec transpose(t) :: t
-  def transpose(%Max{rows: rows, columns: columns} = matrix) do
+  def transpose(%Max{array: array, rows: rows, columns: columns} = matrix) do
     t_matrix = %Max{
       array: :array.new(rows * columns, fixed: true, default: default(matrix)),
       rows: columns,
       columns: rows
     }
 
-    sparse_foldl(
-      matrix,
-      fn index, value, t_matrix ->
-        {row, col} = index_to_position(matrix, index)
-
-        t_matrix |> set({col, row}, value)
-      end,
-      t_matrix
+    map(
+      t_matrix,
+      fn index, _ ->
+        :array.get(rem(index, rows) * columns + div(index, rows), array)
+      end
     )
   end
 

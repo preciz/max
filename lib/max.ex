@@ -655,6 +655,71 @@ defmodule Max do
     )
   end
 
+  @spec add(t, t) :: t
+  def add(%Max{rows: rows, columns: columns} = left, %Max{
+        array: array_right,
+        rows: rows,
+        columns: columns
+      }) do
+    map(
+      left,
+      fn i, v ->
+        v + :array.get(i, array_right)
+      end
+    )
+  end
+
+  @spec multiply(t, t) :: t
+  def multiply(
+        %Max{rows: rows, columns: columns} = left,
+        %Max{array: array_right, rows: rows, columns: columns}
+      ) do
+    map(
+      left,
+      fn i, v ->
+        v * :array.get(i, array_right)
+      end
+    )
+  end
+
+  @spec dot(t, t) :: t
+  def dot(
+        %Max{rows: left_rows, columns: left_columns} = left,
+        %Max{rows: right_rows, columns: right_columns} = right
+      )
+      when left_columns == right_rows do
+    array = :array.new(left_rows * right_columns, fixed: true)
+
+    matrix =
+      %Max{
+        array: array,
+        rows: left_rows,
+        columns: right_columns
+      }
+
+    left_cache =
+      for row_i <- 0..(left_rows - 1), into: %{} do
+        {row_i, left |> row(row_i) |> transpose}
+      end
+
+    right_cache =
+      for col_i <- 0..(right_columns - 1), into: %{} do
+        {col_i, right |> column(col_i)}
+      end
+
+    map(
+      matrix,
+      fn index, _ ->
+        {row, col} = index_to_position(matrix, index)
+
+        multiply(
+          Map.get(left_cache, row),
+          Map.get(right_cache, col)
+        ) |> sum()
+      end
+    )
+  end
+
   defimpl Enumerable do
     @moduledoc false
 

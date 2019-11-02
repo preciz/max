@@ -42,7 +42,7 @@ defmodule Max do
   Returns a new `%Max{}` struct with the given `rows` and `columns` size.
 
   ## Options
-    * `:default` - (term) the default value of the matrix. Defaults to `:undefined`.
+    * `:default` - (term) the default value of the matrix. Defaults to `0`.
 
   ## Examples
 
@@ -51,7 +51,7 @@ defmodule Max do
   """
   @spec new(pos_integer, pos_integer, list) :: t
   def new(rows, columns, options \\ []) do
-    default = Keyword.get(options, :default, :undefined)
+    default = Keyword.get(options, :default, 0)
 
     array = :array.new(rows * columns, fixed: true, default: default)
 
@@ -66,7 +66,7 @@ defmodule Max do
   Converts a flat list to a new `%Max{}` struct with the given `rows` & `columns` size.
 
   ## Options
-    * `:default` - (term) the default value of the matrix. Defaults to `:undefined`.
+    * `:default` - (term) the default value of the matrix. Defaults to `0`.
 
   ## Examples
 
@@ -77,7 +77,7 @@ defmodule Max do
   """
   @spec from_list(nonempty_list, pos_integer, pos_integer, list) :: t
   def from_list(list, rows, columns, options \\ []) do
-    default = Keyword.get(options, :default, :undefined)
+    default = Keyword.get(options, :default, 0)
 
     array =
       :array.resize(
@@ -97,7 +97,7 @@ defmodule Max do
   Converts a list of lists matrix to a new `%Max{}` struct.
 
   ## Options
-    * `:default` - (term) the default value of the matrix. Defaults to `:undefined`.
+    * `:default` - (term) the default value of the matrix. Defaults to `0`.
 
   ## Examples
 
@@ -108,7 +108,7 @@ defmodule Max do
   """
   @spec from_list_of_lists(nonempty_list(nonempty_list), list) :: t
   def from_list_of_lists([h | _] = list, options \\ []) do
-    default = Keyword.get(options, :default, :undefined)
+    default = Keyword.get(options, :default, 0)
 
     rows = length(list)
     columns = length(h)
@@ -134,7 +134,7 @@ defmodule Max do
 
       iex> matrix = Max.from_list_of_lists([[1,2], [3,4]])
       iex> matrix |> Max.default()
-      :undefined
+      0
       iex> matrix = Max.new(5, 5, default: "preciz")
       iex> matrix |> Max.default()
       "preciz"
@@ -601,10 +601,45 @@ defmodule Max do
     end
   end
 
+  @doc """
+  Concatenates a list of matrices.
+
+  Returns a new `%Max{}` struct with a new array containing all values
+  of matrices from `list`.
+
+  ## Options
+    * `:default` - (term) the default value of the matrix. Defaults to `0`.
+
+  ## Examples
+
+      iex> matrix = Max.new(3, 3) |> Max.map(fn i, _v -> i end)
+      iex> matrix |> Max.to_list_of_lists()
+      [
+          [0, 1, 2],
+          [3, 4, 5],
+          [6, 7, 8]
+      ]
+      iex> Max.concat([matrix, matrix], :rows) |> Max.to_list_of_lists()
+      [
+          [0, 1, 2],
+          [3, 4, 5],
+          [6, 7, 8],
+          [0, 1, 2],
+          [3, 4, 5],
+          [6, 7, 8]
+      ]
+      iex> Max.concat([matrix, matrix], :columns) |> Max.to_list_of_lists()
+      [
+          [0, 1, 2, 0, 1, 2],
+          [3, 4, 5, 3, 4, 5],
+          [6, 7, 8, 6, 7, 8]
+      ]
+
+  """
   @spec concat(nonempty_list(t), :rows | :columns, list) :: t | no_return
   def concat([%Max{rows: rows, columns: columns} | _] = list, concat_type, options \\ [])
       when length(list) > 0 do
-    default = Keyword.get(options, :default, :undefined)
+    default = Keyword.get(options, :default, 0)
 
     can_concat? =
       case concat_type do
@@ -680,9 +715,27 @@ defmodule Max do
     )
   end
 
+  @doc """
+  Create identity square matrix of given `size`.
+
+  ## Options
+    * `:default` - (term) the default value of the matrix. Defaults to `0`.
+
+  ## Examples
+
+      iex> Max.identity(5) |> Matrax.to_list_of_lists()
+      [
+          [1, 0, 0, 0, 0],
+          [0, 1, 0, 0, 0],
+          [0, 0, 1, 0, 0],
+          [0, 0, 0, 1, 0],
+          [0, 0, 0, 0, 1]
+      ]
+
+  """
   @spec identity(list) :: t
   def identity(size, options \\ []) do
-    default = Keyword.get(options, :default, :undefined)
+    default = Keyword.get(options, :default, 0)
 
     array = :array.new(size * size, fixed: true, default: default)
 

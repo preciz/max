@@ -427,6 +427,7 @@ defmodule Max do
               ^acc_val -> acc
               _else -> {index, value}
             end
+
           index, value, nil ->
             {index, value}
         end,
@@ -457,6 +458,7 @@ defmodule Max do
               ^acc_val -> acc
               _else -> {index, value}
             end
+
           index, value, nil ->
             {index, value}
         end,
@@ -1223,6 +1225,51 @@ defmodule Max do
         |> sum()
       end
     )
+  end
+
+  @doc """
+  Returns a submatrix from the given `matrix`.
+  Ranges are inclusive.
+
+  ## Options
+    * `:default` - (term) the default value of the matrix. Defaults to `0`.
+
+  ## Examples
+
+      iex> matrix = Max.new(2, 4) |> Max.map(fn i, _v -> i end)
+      iex> matrix |> Max.to_list_of_lists()
+      [
+          [0, 1, 2, 3],
+          [4, 5, 6, 7],
+      ]
+      iex> matrix |> Max.submatrix(0..1, 1..3) |> Max.to_list_of_lists()
+      [
+          [1, 2, 3],
+          [5, 6, 7]
+      ]
+  """
+  def submatrix(
+        %Max{rows: rows, columns: columns} = matrix,
+        row_from..row_to = row_range,
+        col_from..col_to = col_range,
+        options \\ []
+      )
+      when row_from in 0..(rows - 1) and row_to in row_from..(rows - 1) and
+             col_from in 0..(columns - 1) and col_to in col_from..(columns - 1) do
+    default = Keyword.get(options, :default, 0)
+
+    submatrix_rows = row_to + 1 - row_from
+    submatrix_columns = col_to + 1 - col_from
+
+    array = :array.new(submatrix_rows * submatrix_columns, fixed: true, default: default)
+
+    {_, array} =
+      for(row <- row_range, col <- col_range, do: {row, col})
+      |> Enum.reduce({0, array}, fn position, {index, array} ->
+        {index + 1, :array.set(index, get(matrix, position), array)}
+      end)
+
+    %Max{array: array, rows: submatrix_rows, columns: submatrix_columns}
   end
 
   defimpl Enumerable do

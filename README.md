@@ -1,5 +1,7 @@
 # Max
 
+[![Build Status](https://travis-ci.org/preciz/max.svg?branch=master)](https://travis-ci.org/preciz/max)
+
 A matrix library in pure Elixir based on Erlang `:array`.
 
 ```elixir

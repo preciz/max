@@ -1078,18 +1078,24 @@ defmodule Max do
   """
   @spec transpose(t) :: t
   def transpose(%Max{array: array, rows: rows, columns: columns} = matrix) do
-    t_matrix = %Max{
-      array: :array.new(rows * columns, fixed: true, default: default(matrix)),
+    list = do_transpose(0, rows * columns, array, columns, rows)
+
+    %Max{
+      array: :array.from_list(list, default(matrix)),
       rows: columns,
       columns: rows
     }
+  end
 
-    map(
-      t_matrix,
-      fn index, _ ->
-        :array.get(rem(index, rows) * columns + div(index, rows), array)
-      end
-    )
+  defp do_transpose(same, same, _, _, _) do
+    []
+  end
+
+  defp do_transpose(index, size, array, columns, rows) do
+    [
+      :array.get(rem(index, rows) * columns + div(index, rows), array)
+      | do_transpose(index + 1, size, array, columns, rows)
+    ]
   end
 
   @doc """

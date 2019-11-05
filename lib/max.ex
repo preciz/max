@@ -926,15 +926,17 @@ defmodule Max do
 
     array = :array.new(size * size, fixed: true, default: default)
 
-    0..(size - 1)
-    |> Enum.reduce(
-      %Max{array: array, rows: size, columns: size},
-      fn index, acc ->
-        position = {index, index}
+    array = do_identity(0, size, array)
 
-        set(acc, position, 1)
-      end
-    )
+    %Max{array: array, rows: size, columns: size}
+  end
+
+  defp do_identity(same, same, array), do: array
+
+  defp do_identity(index, size, array) do
+    array = :array.set(index * (size + 1), 1, array)
+
+    do_identity(index + 1, size, array)
   end
 
   @doc """

@@ -1,7 +1,7 @@
 defmodule Max.MixProject do
   use Mix.Project
 
-  @version "0.1.3"
+  @version "0.1.4"
   @github "https://github.com/preciz/max"
 
   def project do

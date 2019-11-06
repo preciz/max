@@ -50,7 +50,8 @@ defmodule Max do
        Max.new(10, 5, default: 70) # 70 as a default value
   """
   @spec new(pos_integer, pos_integer, list) :: t
-  def new(rows, columns, options \\ []) do
+  def new(rows, columns, options \\ [])
+      when is_integer(rows) and is_integer(columns) and rows > 0 and columns > 0 do
     default = Keyword.get(options, :default, 0)
 
     array = :array.new(rows * columns, fixed: true, default: default)

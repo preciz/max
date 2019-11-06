@@ -891,16 +891,11 @@ defmodule Max do
 
   """
   @spec diagonal(t) :: t
-  def diagonal(%Max{columns: columns} = matrix) do
-    array = :array.new(columns, fixed: true, default: default(matrix))
-
-    0..(columns - 1)
-    |> Enum.reduce(
-      %Max{array: array, rows: 1, columns: columns},
-      fn col, acc ->
-        set(acc, {0, col}, get(matrix, {col, col}))
-      end
-    )
+  def diagonal(%Max{rows: rows} = matrix) do
+    for row <- 0..(rows - 1) do
+      get(matrix, {row, row})
+    end
+    |> from_list(1, rows, default: default(matrix))
   end
 
   @doc """

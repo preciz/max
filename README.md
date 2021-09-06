@@ -1,3 +1,5 @@
+# Archived. Use the [Nx](https://github.com/elixir-nx/nx) library instead.
+
 # Max
 
 [![Build Status](https://travis-ci.org/preciz/max.svg?branch=master)](https://travis-ci.org/preciz/max)
